@@ -13,6 +13,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Cleanup disk
+      run: |
+        docker system prune -af || true
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+        sudo apt-get clean
+        df -h
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
@@ -23,27 +30,7 @@ jobs:
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASS }}
 
-    - name: Build all Unstract images
+    - name: Build & Push (BuildKit 직접 Push)
       run: |
         cd docker
-        VERSION=latest docker compose -f docker-compose.build.yaml build
-
-    - name: Tag all images
-      run: |
-        docker tag unstract/backend:latest            ${{ secrets.REGISTRY_HOST }}/unstract/backend:latest
-        docker tag unstract/frontend:latest           ${{ secrets.REGISTRY_HOST }}/unstract/frontend:latest
-        docker tag unstract/prompt-service:latest     ${{ secrets.REGISTRY_HOST }}/unstract/prompt-service:latest
-        docker tag unstract/platform-service:latest   ${{ secrets.REGISTRY_HOST }}/unstract/platform-service:latest
-        docker tag unstract/x2text-service:latest     ${{ secrets.REGISTRY_HOST }}/unstract/x2text-service:latest
-        docker tag unstract/runner:latest             ${{ secrets.REGISTRY_HOST }}/unstract/runner:latest
-        docker tag unstract/worker-unified:latest     ${{ secrets.REGISTRY_HOST }}/unstract/worker-unified:latest
-
-    - name: Push all images
-      run: |
-        docker push ${{ secrets.REGISTRY_HOST }}/unstract/backend:latest
-        docker push ${{ secrets.REGISTRY_HOST }}/unstract/frontend:latest
-        docker push ${{ secrets.REGISTRY_HOST }}/unstract/prompt-service:latest
-        docker push ${{ secrets.REGISTRY_HOST }}/unstract/platform-service:latest
-        docker push ${{ secrets.REGISTRY_HOST }}/unstract/x2text-service:latest
-        docker push ${{ secrets.REGISTRY_HOST }}/unstract/runner:latest
-        docker push ${{ secrets.REGISTRY_HOST }}/unstract/worker-unified:latest
+        VERSION=latest docker compose -f docker-compose.build.yaml build --push
