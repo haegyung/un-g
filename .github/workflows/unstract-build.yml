@@ -32,6 +32,10 @@ jobs:
           
 
     - name: Build & Push (BuildKit 직접 Push)
+      env:
+        REGISTRY_HOST: ${{ secrets.git }}
+        VERSION: latest
       run: |
         cd docker
-        VERSION=latest docker compose -f docker-compose.build.yaml build --push
+        docker compose -f docker-compose.build.yaml build --push
+
