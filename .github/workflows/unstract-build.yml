@@ -26,9 +26,10 @@ jobs:
     - name: Login to private registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASS }}
+            registry: ${{ secrets.REGISTRY_HOST }}
+            username: ${{ secrets.REGISTRY_USER }}
+            password: ${{ secrets.REGISTRY_PASS }}
+          
 
     - name: Build & Push (BuildKit 직접 Push)
       run: |
