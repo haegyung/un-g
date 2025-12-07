@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   frontend:
     image: ${REGISTRY_HOST}/unstract/frontend:${VERSION}
