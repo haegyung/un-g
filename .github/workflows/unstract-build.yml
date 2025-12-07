@@ -33,7 +33,7 @@ jobs:
 
     - name: Build & Push (BuildKit 직접 Push)
       env:
-        REGISTRY_HOST: ${{ secrets.git }}
+        REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
         VERSION: latest
       run: |
         cd docker
