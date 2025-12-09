@@ -31,6 +31,7 @@ jobs:
             password: ${{ secrets.REGISTRY_PASS }}
           
 
+
     - name: Build & Push (BuildKit 직접 Push)
       env:
         REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
@@ -38,4 +39,3 @@ jobs:
       run: |
         cd docker
         docker compose -f docker-compose.build.yaml build --push
-
