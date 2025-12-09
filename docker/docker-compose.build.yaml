@@ -1,71 +1,44 @@
 version: "3.8"
 
 services:
-  frontend:
-    image: ${REGISTRY_HOST}/unstract/frontend:${VERSION}
-    build:
-      dockerfile: docker/dockerfiles/frontend.Dockerfile
-      context: ..
-      target: production
-
   backend:
-    image: ${REGISTRY_HOST}/unstract/backend:${VERSION}
+    image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/backend:${VERSION:-latest}
     build:
-      dockerfile: docker/dockerfiles/backend.Dockerfile
       context: ..
+      dockerfile: backend/Dockerfile
 
-  runner:
-    image: ${REGISTRY_HOST}/unstract/runner:${VERSION}
+  frontend:
+    image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/frontend:${VERSION:-latest}
     build:
-      dockerfile: docker/dockerfiles/runner.Dockerfile
       context: ..
-
-  tool-sidecar:
-    image: ${REGISTRY_HOST}/unstract/tool-sidecar:${VERSION}
-    build:
-      dockerfile: docker/dockerfiles/tool-sidecar.Dockerfile
-      context: ..
-
-  tool-structure:
-    image: ${REGISTRY_HOST}/unstract/tool-structure:${VERSION}
-    build:
-      dockerfile: tools/structure/Dockerfile
-      context: ..
-
-  tool-text_extractor:
-    image: ${REGISTRY_HOST}/unstract/tool-text_extractor:${VERSION}
-    build:
-      dockerfile: tools/text_extractor/Dockerfile
-      context: ..
-
-  tool-classifier:
-    image: ${REGISTRY_HOST}/unstract/tool-classifier:${VERSION}
-    build:
-      dockerfile: tools/classifier/Dockerfile
-      context: ..
+      dockerfile: frontend/Dockerfile
 
   platform-service:
-    image: ${REGISTRY_HOST}/unstract/platform-service:${VERSION}
+    image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/platform-service:${VERSION:-latest}
     build:
-      dockerfile: docker/dockerfiles/platform.Dockerfile
       context: ..
+      dockerfile: platform-service/Dockerfile
 
   prompt-service:
-    image: ${REGISTRY_HOST}/unstract/prompt-service:${VERSION}
+    image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/prompt-service:${VERSION:-latest}
     build:
-      dockerfile: docker/dockerfiles/prompt.Dockerfile
       context: ..
+      dockerfile: prompt-service/Dockerfile
 
   x2text-service:
-    image: ${REGISTRY_HOST}/unstract/x2text-service:${VERSION}
+    image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/x2text-service:${VERSION:-latest}
     build:
-      dockerfile: docker/dockerfiles/x2text.Dockerfile
       context: ..
+      dockerfile: x2text-service/Dockerfile
+
+  runner:
+    image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/runner:${VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: runner/Dockerfile
 
   worker-unified:
-    image: ${REGISTRY_HOST}/unstract/worker-unified:${VERSION}
+    image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/worker-unified:${VERSION:-latest}
     build:
-      dockerfile: docker/dockerfiles/worker-unified.Dockerfile
       context: ..
-      args:
-        MINIMAL_BUILD: ${MINIMAL_BUILD:-0}
+      dockerfile: workers/unified/Dockerfile
