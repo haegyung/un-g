@@ -5,37 +5,119 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+env:
+  # 레지스트리 호스트는 시크릿에서 주입
+  REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
+  REGISTRY_ORG: unstract
+  VERSION: latest
+  GIT_SHA: ${{ github.sha }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Cleanup disk
-      run: |
-        docker system prune -af || true
-        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
-        sudo apt-get clean
-        df -h
+      - name: Cleanup disk
+        run: |
+          docker system prune -af || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+          sudo apt-get clean
+          df -h
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Login to private registry
-      uses: docker/login-action@v3
-      with:
-            registry: ${{ secrets.REGISTRY_HOST }}
-            username: ${{ secrets.REGISTRY_USER }}
-            password: ${{ secrets.REGISTRY_PASS }}
-          
+      - name: Login to private registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_HOST }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASS }}
 
+      # -------------------------------
+      # Backend
+      # -------------------------------
+      - name: Build & Push backend
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/backend:${VERSION} \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/backend:${GIT_SHA} \
+            --push \
+            ./backend
 
-    - name: Build & Push (BuildKit 직접 Push)
-      env:
-        REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
-        VERSION: latest
-      run: |
-        cd docker
-        docker compose -f docker-compose.build.yaml build --push
+      # -------------------------------
+      # Frontend
+      # -------------------------------
+      - name: Build & Push frontend
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/frontend:${VERSION} \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/frontend:${GIT_SHA} \
+            --push \
+            ./frontend
+
+      # -------------------------------
+      # Platform Service
+      # -------------------------------
+      - name: Build & Push platform-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/platform-service:${VERSION} \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/platform-service:${GIT_SHA} \
+            --push \
+            ./platform-service
+
+      # -------------------------------
+      # Prompt Service
+      # -------------------------------
+      - name: Build & Push prompt-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/prompt-service:${VERSION} \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/prompt-service:${GIT_SHA} \
+            --push \
+            ./prompt-service
+
+      # -------------------------------
+      # x2text Service
+      # -------------------------------
+      - name: Build & Push x2text-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/x2text-service:${VERSION} \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/x2text-service:${GIT_SHA} \
+            --push \
+            ./x2text-service
+
+      # -------------------------------
+      # Runner
+      # -------------------------------
+      - name: Build & Push runner
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/runner:${VERSION} \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/runner:${GIT_SHA} \
+            --push \
+            ./runner
+
+      # -------------------------------
+      # Worker (unified)
+      # -------------------------------
+      # ❗ workers 디렉터리 구조에 따라 context/Dockerfile 경로는 조정 필요
+      - name: Build & Push worker-unified
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/worker-unified:${VERSION} \
+            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/worker-unified:${GIT_SHA} \
+            --push \
+            ./workers
