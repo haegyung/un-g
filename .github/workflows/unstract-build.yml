@@ -37,6 +37,18 @@ jobs:
           username: ${{ secrets.REGISTRY_USER }}
           password: ${{ secrets.REGISTRY_PASS }}
 
+      - name: Validate registry env
+        run: |
+          set -euo pipefail
+          echo "REGISTRY_HOST=${REGISTRY_HOST}"
+          echo "REGISTRY_ORG=${REGISTRY_ORG}"
+          echo "VERSION=${VERSION}"
+          # reject scheme or slashes
+          if echo "${REGISTRY_HOST}" | grep -qE 'https?://|/'; then
+            echo "ERROR: REGISTRY_HOST must be host only, e.g. registry.xsfire.com (no scheme, no slashes)"
+            exit 1
+          fi
+
       # -------------------------------
       # Backend
       # -------------------------------
