@@ -1,43 +1,59 @@
-version: "3.8"
+# docker/docker-compose.build.yaml
+# Purpose: Build+Push all Unstract service images to a private registry
+# Note: Run from ./docker directory (e.g., `cd docker && docker compose -f docker-compose.build.yaml build --push`)
+
+x-image: &image_defaults
+  # REGISTRY_HOST가 비어도 기본값으로 안전하게 레지스트리 호스트를 사용
+  # (단, 워크플로에서는 env로 확실히 주입하는 것을 권장)
+  image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/PLACEHOLDER:${VERSION:-latest}
+  build:
+    context: ..
 
 services:
   backend:
+    <<: *image_defaults
     image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/backend:${VERSION:-latest}
     build:
       context: ..
       dockerfile: backend/Dockerfile
 
   frontend:
+    <<: *image_defaults
     image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/frontend:${VERSION:-latest}
     build:
       context: ..
       dockerfile: frontend/Dockerfile
 
   platform-service:
+    <<: *image_defaults
     image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/platform-service:${VERSION:-latest}
     build:
       context: ..
       dockerfile: platform-service/Dockerfile
 
   prompt-service:
+    <<: *image_defaults
     image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/prompt-service:${VERSION:-latest}
     build:
       context: ..
       dockerfile: prompt-service/Dockerfile
 
   x2text-service:
+    <<: *image_defaults
     image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/x2text-service:${VERSION:-latest}
     build:
       context: ..
       dockerfile: x2text-service/Dockerfile
 
   runner:
+    <<: *image_defaults
     image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/runner:${VERSION:-latest}
     build:
       context: ..
       dockerfile: runner/Dockerfile
 
   worker-unified:
+    <<: *image_defaults
     image: ${REGISTRY_HOST:-registry.xsfire.com}/unstract/worker-unified:${VERSION:-latest}
     build:
       context: ..
