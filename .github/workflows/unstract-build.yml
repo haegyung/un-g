@@ -6,8 +6,11 @@ on:
   workflow_dispatch:
 
 env:
-  # 레지스트리 호스트는 시크릿에서 주입
-  REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
+  # Environment secrets (unstract)에서 가져옴
+  REGISTRY_HOST: ${{ secrets.REGISTRY_URL }}          # host only: registry.xsfire.com
+  REGISTRY_USER: ${{ secrets.REGISTRY_USERNAME }}
+  REGISTRY_PASS: ${{ secrets.REGISTRY_PASSWORD }}
+
   REGISTRY_ORG: unstract
   VERSION: latest
   GIT_SHA: ${{ github.sha }}
@@ -15,6 +18,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: unstract
 
     steps:
       - name: Checkout
@@ -30,24 +34,29 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to private registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.REGISTRY_HOST }}
-          username: ${{ secrets.REGISTRY_USER }}
-          password: ${{ secrets.REGISTRY_PASS }}
-
       - name: Validate registry env
         run: |
           set -euo pipefail
           echo "REGISTRY_HOST=${REGISTRY_HOST}"
           echo "REGISTRY_ORG=${REGISTRY_ORG}"
           echo "VERSION=${VERSION}"
+
+          test -n "${REGISTRY_HOST}" || (echo "ERROR: REGISTRY_HOST is empty" && exit 1)
+          test -n "${REGISTRY_USER}" || (echo "ERROR: REGISTRY_USER is empty" && exit 1)
+          test -n "${REGISTRY_PASS}" || (echo "ERROR: REGISTRY_PASS is empty" && exit 1)
+
           # reject scheme or slashes
           if echo "${REGISTRY_HOST}" | grep -qE 'https?://|/'; then
             echo "ERROR: REGISTRY_HOST must be host only, e.g. registry.xsfire.com (no scheme, no slashes)"
             exit 1
           fi
+
+      - name: Login to private registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_HOST }}
+          username: ${{ env.REGISTRY_USER }}
+          password: ${{ env.REGISTRY_PASS }}
 
       # -------------------------------
       # Backend
@@ -122,14 +131,14 @@ jobs:
             ./runner
 
       # -------------------------------
-      # Worker (unified)
+      # Worker (unified) - Dockerfile 경로 고정
       # -------------------------------
-      # ❗ workers 디렉터리 구조에 따라 context/Dockerfile 경로는 조정 필요
       - name: Build & Push worker-unified
         run: |
           docker buildx build \
             --platform linux/amd64 \
+            -f workers/unified/Dockerfile \
             -t ${REGISTRY_HOST}/${REGISTRY_ORG}/worker-unified:${VERSION} \
             -t ${REGISTRY_HOST}/${REGISTRY_ORG}/worker-unified:${GIT_SHA} \
             --push \
-            ./workers
+            .
