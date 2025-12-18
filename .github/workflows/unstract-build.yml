@@ -5,16 +5,6 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-env:
-  # Environment secrets (unstract)에서 가져옴
-  REGISTRY_HOST: ${{ secrets.REGISTRY_URL }}          # host only: registry.xsfire.com
-  REGISTRY_USER: ${{ secrets.REGISTRY_USERNAME }}
-  REGISTRY_PASS: ${{ secrets.REGISTRY_PASSWORD }}
-
-  REGISTRY_ORG: unstract
-  VERSION: latest
-  GIT_SHA: ${{ github.sha }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,110 +25,29 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Validate registry env
+        env:
+          REGISTRY_HOST: ${{ secrets.REGISTRY_URL }}
         run: |
           set -euo pipefail
           echo "REGISTRY_HOST=${REGISTRY_HOST}"
-          echo "REGISTRY_ORG=${REGISTRY_ORG}"
-          echo "VERSION=${VERSION}"
-
-          test -n "${REGISTRY_HOST}" || (echo "ERROR: REGISTRY_HOST is empty" && exit 1)
-          test -n "${REGISTRY_USER}" || (echo "ERROR: REGISTRY_USER is empty" && exit 1)
-          test -n "${REGISTRY_PASS}" || (echo "ERROR: REGISTRY_PASS is empty" && exit 1)
-
-          # reject scheme or slashes
+          test -n "${REGISTRY_HOST}" || (echo "ERROR: REGISTRY_HOST empty" && exit 1)
           if echo "${REGISTRY_HOST}" | grep -qE 'https?://|/'; then
-            echo "ERROR: REGISTRY_HOST must be host only, e.g. registry.xsfire.com (no scheme, no slashes)"
+            echo "ERROR: REGISTRY_HOST must be host only (no scheme, no slashes)"
             exit 1
           fi
 
       - name: Login to private registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY_HOST }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASS }}
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      # -------------------------------
-      # Backend
-      # -------------------------------
-      - name: Build & Push backend
+      - name: Build & Push all images (compose)
+        env:
+          REGISTRY_HOST: ${{ secrets.REGISTRY_URL }}
+          VERSION: latest
         run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/backend:${VERSION} \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/backend:${GIT_SHA} \
-            --push \
-            ./backend
-
-      # -------------------------------
-      # Frontend
-      # -------------------------------
-      - name: Build & Push frontend
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/frontend:${VERSION} \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/frontend:${GIT_SHA} \
-            --push \
-            ./frontend
-
-      # -------------------------------
-      # Platform Service
-      # -------------------------------
-      - name: Build & Push platform-service
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/platform-service:${VERSION} \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/platform-service:${GIT_SHA} \
-            --push \
-            ./platform-service
-
-      # -------------------------------
-      # Prompt Service
-      # -------------------------------
-      - name: Build & Push prompt-service
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/prompt-service:${VERSION} \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/prompt-service:${GIT_SHA} \
-            --push \
-            ./prompt-service
-
-      # -------------------------------
-      # x2text Service
-      # -------------------------------
-      - name: Build & Push x2text-service
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/x2text-service:${VERSION} \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/x2text-service:${GIT_SHA} \
-            --push \
-            ./x2text-service
-
-      # -------------------------------
-      # Runner
-      # -------------------------------
-      - name: Build & Push runner
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/runner:${VERSION} \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/runner:${GIT_SHA} \
-            --push \
-            ./runner
-
-      # -------------------------------
-      # Worker (unified) - Dockerfile 경로 고정
-      # -------------------------------
-      - name: Build & Push worker-unified
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -f workers/unified/Dockerfile \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/worker-unified:${VERSION} \
-            -t ${REGISTRY_HOST}/${REGISTRY_ORG}/worker-unified:${GIT_SHA} \
-            --push \
-            .
+          set -euo pipefail
+          cd docker
+          docker compose -f docker-compose.build.yaml build --push
